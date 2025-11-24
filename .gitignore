@@ -1,5 +1,11 @@
 *.pyc
 *.log
 *.swp
+*BAK
+
+BP
+BIN
+PRETTY/
+
 tmp
 old
