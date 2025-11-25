@@ -9,6 +9,7 @@ function    IntToStr(i:integer):string;
 function    HexStrToByte(const S:string):Byte;
 function    byte2hex(b:byte):string;
 function    hex2byte(c:char):byte;
+function    Long2Hex(l:Longint):string;
 
 implementation 
 
@@ -60,6 +61,24 @@ function    HexStrToByte(const S:string):Byte;
    if code<>0 then 
       I:=0;
    HexStrToByte:=I;
+  end;
+
+function    Long2Hex(l:Longint):string;
+
+  var
+      s:string[8];
+
+  begin 
+   Long2Hex:='0';
+   if l=0 then 
+      exit;
+   s:='';
+   while l<>0 do
+         begin 
+          s:=HexChars[l and 15]+s;
+          l:=l shr 4;
+         end;
+   Long2Hex:=s;
   end;
 
 end.

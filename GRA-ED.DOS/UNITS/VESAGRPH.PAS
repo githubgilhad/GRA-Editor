@@ -1,3 +1,5 @@
+{- vim: ft=pascal:textwidth=125:nowrap 
+-}
 unit VesaGrph;
 
 Interface 

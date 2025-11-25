@@ -1,19 +1,23 @@
+
+{- vim: ft=pascal:textwidth=125:nowrap 
+-}
 unit Cursor;
 
 interface 
 
 uses
-     VesaGrph;
+     VesaGrph,UPoint;
 
 type
      TCursor=
        object
          x,y:Integer;{ souradnice }
-         hidden:boolean;
          origin_x,origin_y:word;{ zde ma 0,0 }
-         max_x,max_y:word;{ zde ma 0,0 }
+         max_x,max_y:word;{ o kolik muze vys 160,200 }
          step_x,step_y:word;{ o kolik se posouva }
          size_x,size_y:word;
+         c_show,c_hide:TColor;
+         status,max_status:byte;
 
          constructor init(_origin_x,_origin_y:word;{ zde ma 0,0 -} 
              _max_x,_max_y:word;{ zde ma 0,0 -} 
@@ -25,13 +29,11 @@ type
          procedure   move(dx,dy:integer);{ relativni pohyb }
          procedure   move_to(nx,ny:word);{ absolutni }
          procedure   draw(Color:TColor);
-         procedure   event(c:char);{ zareaguje na znak - pohyby }
+         function    event(c:char):boolean;{ zareaguje na znak - pohyby, true, pokud reagoval }
+         procedure   rotate;
 
        end;
 
-
-var
-    Trace:TColor;
 
 implementation 
 
@@ -39,100 +41,110 @@ constructor TCursor. init(_origin_x,_origin_y:word; _max_x,_max_y:word; _step_x,
         _size_x,_size_y:word);
 
   begin 
-   self.origin_x:=_origin_x;
-   self.origin_y:=_origin_y;
-   self.max_x:=_max_x;
-   self.max_y:=_max_y;
-   self.step_x:=_step_x;
-   self.step_y:=_step_y;
-   self.size_x:=_size_x;
-   self.size_y:=_size_y;
+   origin_x:=_origin_x;
+   origin_y:=_origin_y;
+   max_x:=_max_x;
+   max_y:=_max_y;
+   step_x:=_step_x;
+   step_y:=_step_y;
+   size_x:=_size_x;
+   size_y:=_size_y;
 {--}
-   self.x:=0;
-   self.y:=0;
-   self.fix;
-   self.hidden:=false;
+   x:=0;
+   y:=0;
+   c_show:=colWhite;
+   c_hide:=RGB2Color(20,20,20);
+   max_status:=4;
+   status:=max_status;
+   fix;
   end;
 
 procedure   TCursor. show;
 
   begin 
-   if  not self.hidden then 
-      begin 
-       FillRect(self.origin_x+self.x*self.step_x, self.origin_y+self.y*self.step_y, 
-           self.origin_x+self.x*self.step_x+self.size_x, self.origin_y+self.y*self.step_y+self.size_y, 
-           Trace);
-       self.draw(colWhite);
-      end;
+   draw(c_show);
   end;
 
 procedure   TCursor. hide;
 
   begin 
-   if  not self.hidden then 
-      self.draw(colBlack);
+   draw(c_hide);
   end;
 
 procedure   TCursor. fix;{ orizne do limitu }
 
   begin 
-   if self.x>self.max_x then 
-      self.x:=0;
-   if self.x<0 then 
-      self.x:=self.max_x;
-   if self.y>self.max_y then 
-      self.y:=0;
-   if self.y<0 then 
-      self.y:=self.max_y;
+   while x>=max_x do
+         x:=x-max_x;
+   while x<0 do
+         x:=x+max_x;
+   while y>=max_y do
+         y:=y-max_y;
+   while y<0 do
+         y:=y+max_y;
   end;
 
 procedure   TCursor. move(dx,dy:integer);{ relativni pohyb }
 
   begin 
-   self.hide;
-   self.x:=self.x+dx;
-   self.y:=self.y+dy;
-   self.fix;
-   self.show;
+   hide;
+   x:=x+dx;
+   y:=y+dy;
+   fix;
+   show;
   end;
 
 procedure   TCursor. move_to(nx,ny:word);{ absolutni }
 
   begin 
-   self.hide;
-   self.x:=nx;
-   self.y:=ny;
-   self.fix;
-   self.show;
+   hide;
+   x:=nx;
+   y:=ny;
+   fix;
+   show;
   end;
 
 procedure   TCursor. draw(Color:TColor);
 
-  begin 
-   DrawHLine(self.origin_x+self.x*self.step_x, self.origin_x+self.x*self.step_x+self.size_x, 
-       self.origin_y+self.y*self.step_y, Color);
-   DrawHLine(self.origin_x+self.x*self.step_x, self.origin_x+self.x*self.step_x+self.size_x, 
-       self.origin_y+self.y*self.step_y+self.size_y, Color);
-   DrawVLine(self.origin_x+self.x*self.step_x, self.origin_y+self.y*self.step_y, 
-       self.origin_y+self.y*self.step_y+self.size_y, Color);
-   DrawVLine(self.origin_x+self.x*self.step_x+self.size_x, self.origin_y+self.y*self.step_y, 
-       self.origin_y+self.y*self.step_y+self.size_y, Color);
+  begin
+   DrawHLine(origin_x+x*step_x-1, origin_x+x*step_x+size_x-1, origin_y+y*step_y-1,
+       Color);
+   DrawHLine(origin_x+x*step_x-1, origin_x+x*step_x+size_x-1, origin_y+y*step_y+size_y-1,
+       Color);
+   DrawVLine(origin_x+x*step_x-1, origin_y+y*step_y, origin_y+y*step_y+size_y-1,
+       Color);
+   DrawVLine(origin_x+x*step_x+size_x-1, origin_y+y*step_y, origin_y+y*step_y+size_y-1,
+       Color);
   end;
 
-procedure   TCursor. event(c:char);{ zareaguje na znak - pohyby }
+function    TCursor. event(c:char):boolean;{ zareaguje na znak - pohyby, true, pokud reagoval }
+
+  begin
+   event:=true;
+    case c of
+         '1':move(-1, 1);
+         '2':move(0, 1);
+         '3':move(1, 1);
+         '4':move(-1, 0);
+         '6':move(1, 0);
+         '7':move(-1, -1);
+         '8':move(0, -1);
+         '9':move(1, -1);
+         chr(75):move(-8,0);
+         chr(77):move(8,0);
+         chr(72):move(0,-8);
+         chr(80):move(0,8);
+         else
+              event:=false;
+    end ;
+  end;
+
+procedure   TCursor. rotate;
 
   begin 
-    case c of
-         '1':self.move(-1, 1);
-         '2':self.move(0, 1);
-         '3':self.move(1, 1);
-         '4':self.move(-1, 0);
-         '6':self.move(1, 0);
-         '7':self.move(-1, -1);
-         '8':self.move(0, -1);
-         '9':self.move(1, -1);
-
-    end ;
+   inc(status);
+   if status>max_status then 
+      status:=0;
   end;
 
 end.
